@@ -32,10 +32,15 @@ import re
 pat=re.compile('\'(.*)\'')
 alist = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P']
 
-def get_Hyperlink(sheet, match):
+def get_Hyperlink(sheet, match, part_name):
+    is_into = 0
     for h in sheet.hyperlink_list:
-        if h.desc == match:
-            return h
+        if is_into:
+            if h.desc == match:
+                return h
+        else:
+            if h.desc == part_name:
+                is_into = 1
 
     return None
 
@@ -67,10 +72,10 @@ def write_execl(sheet, cindex, value, careerSheet, ignore_row = 3, cr = 1):
 
 
 if __name__ == "__main__":
-    name = "CalabrioRecorded.xls"
+    name = "CalabrioRecorded_new.xls"
     wb = open_workbook(name)
     map_sheet = wb.sheet_by_index(0)
-    hyperlink = get_Hyperlink(map_sheet, 'IFP')
+    hyperlink = get_Hyperlink(map_sheet, 'IFP', 'DESKTOP - Daily')
     if not hyperlink:
         exit(1)
 
@@ -90,4 +95,4 @@ if __name__ == "__main__":
     #print("cr:", cr)
     cr = write_execl(mc_sheet, 11, 5, careerSheet, 4, cr)
     #print("cr:", cr)
-    outwb.save('my3.xlsx')
+    outwb.save('my4.xlsx')
