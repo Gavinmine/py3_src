@@ -2,10 +2,13 @@
 # coding=utf-8
 
 import socket, logging
-import select
-import struct 
+import select, re, struct, gzip
 from subprocess import getstatusoutput
+#import chardet
 
+CONTEN_LENGTH = re.compile(b'Content\-Length: (\d+)\\r\\n')
+CONTEN_TYPE = re.compile(b'Content\-Type: (.*)\\r\\n')
+CONTEN_ENCODING = re.compile(b'Content\-Encoding: (\w+)\\r\\n')
 logger = logging.getLogger("scoks_server")
 
 def InitLog():
@@ -68,6 +71,7 @@ if __name__=="__main__":
     first_step = {}
     second_step = {}
     connections = {}
+    collect_datas = {}
 
     while True:
         epoll_list = epoll_fd.poll()
@@ -236,6 +240,8 @@ if __name__=="__main__":
                     epoll_fd.register(destsock.fileno(), select.EPOLLIN)
                     connections[destsock.fileno()] = (destsock, second_step[fd])
                     connections[fd] = (second_step[fd], destsock)
+                    collect_datas[fd] = b''
+                    collect_datas[destsock.fileno()] = b''
                     second_step[fd].send(send_data)
                     del second_step[fd]
                     #print('connected!!')
@@ -248,7 +254,24 @@ if __name__=="__main__":
                         data = connections[fd][0].recv(4096)
                         #remote side has close socket, closed this side
                         if not data:
-                            logger.info('recv done %s close connection!', connections[fd][0])
+                            logger.debug('recvive datas from done  :%s' % connections[fd][0])
+                            logger.debug('send those datas below to:%s' % connections[fd][1])
+                            match = CONTEN_LENGTH.search(collect_datas[fd])
+                            if match:
+                                datas = collect_datas[fd]
+                                content_length = match.groups(0)[0]
+                                content_length = content_length.decode('utf8')
+                                content_length = int(content_length)
+                                headers = datas[:-content_length]
+                                #headers = headers.decode('utf8')
+                                content = datas[-content_length:]
+                                match = CONTEN_TYPE.search(headers)
+                                if match and match.groups(0)[0] == b'text/html':
+                                    content = gzip.decompress(content)
+                                    content = content.decode('utf8')
+                                    logger.debug('all recv headers:%s' % headers)
+                                    logger.debug('all recv content:%s' % content)
+                            #print('data type:', chardet.detect(collect_datas[fd]))
                             second_file = connections[fd][1].fileno()
                             epoll_fd.unregister(fd)
                             epoll_fd.unregister(second_file)
@@ -256,12 +279,27 @@ if __name__=="__main__":
                             connections[fd][1].close()
                             del connections[fd]
                             del connections[second_file]
+                            del collect_datas[fd]
                             break
-                        logger.info("#####################################")
-                        logger.info("recv fd:%s" % connections[fd][0])
-                        logger.info("data_length:%d" % len(data))
-                        logger.info("recv datas: %s" % data)
+                        #logger.info("#####################################")
+                        #logger.info("recv fd:%s" % connections[fd][0])
+                        #logger.info("data_length:%d" % len(data))
+                        #logger.info("recv datas: %s" % data)
+                        collect_datas[fd] += data
                         connections[fd][1].send(data)
+                    except ConnectionResetError as msg:
+                        logger.error('recv error on connections %s' % connections[fd][0])
+                        logger.error('send those datas below to %s' % connections[fd][1])
+                        logger.error('all recv datas:%s' % collect_datas[fd])
+                        second_file = connections[fd][1].fileno()
+                        epoll_fd.unregister(fd)
+                        epoll_fd.unregister(second_file)
+                        connections[fd][0].close()
+                        connections[fd][1].close()
+                        del connections[fd]
+                        del connections[second_file]
+                        del collect_datas[fd]
+                        break
                     except BlockingIOError as msg:
                         #logger.info('recv done:%s' % msg)
                         break
