@@ -9,6 +9,7 @@ from subprocess import getstatusoutput
 CONTEN_LENGTH = re.compile(b'Content\-Length: (\d+)\\r\\n')
 CONTEN_TYPE = re.compile(b'Content\-Type: (.*)\\r\\n')
 CONTEN_ENCODING = re.compile(b'Content\-Encoding: (\w+)\\r\\n')
+JPG_COUNT = 1
 logger = logging.getLogger("scoks_server")
 
 def InitLog():
@@ -266,7 +267,16 @@ if __name__=="__main__":
                                 #headers = headers.decode('utf8')
                                 content = datas[-content_length:]
                                 match = CONTEN_TYPE.search(headers)
-                                if match and match.groups(0)[0] == b'text/html':
+                                if match and match.groups(0)[0] == b'image/jpeg':
+                                    jpg_name = 'test_%d.jpg'%JPG_COUNT
+                                    #print('Content Length:%d' % content_length)
+                                    logger.debug('all recv headers:%s' % headers)
+                                    logger.debug('all recv content:%s' % content)
+                                    jpg_w = open(jpg_name, 'wb')
+                                    jpg_w.write(content)
+                                    jpg_w.close()
+                                    JPG_COUNT += 1
+                                elif match and match.groups(0)[0] == b'text/html':
                                     content = gzip.decompress(content)
                                     content = content.decode('utf8')
                                     logger.debug('all recv headers:%s' % headers)
