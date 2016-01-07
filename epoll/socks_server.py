@@ -9,7 +9,7 @@ from subprocess import getstatusoutput
 CONTEN_LENGTH = re.compile(b'Content\-Length: (\d+)\\r\\n')
 CONTEN_TYPE = re.compile(b'Content\-Type: (.*)\\r\\n')
 CONTEN_ENCODING = re.compile(b'Content\-Encoding: (\w+)\\r\\n')
-JPG_COUNT = 1
+ALL_COUNT = 1
 logger = logging.getLogger("scoks_server")
 
 def InitLog():
@@ -34,6 +34,59 @@ def Runcmd(cmd=None):
 
     result=getstatusoutput(cmd)
     return result[1].encode('utf-8')
+
+
+def datas_parser(datas, count = 1):
+    try:
+        headers, contents = datas.split(b'\r\n\r\n', 1)
+    except ValueError as msg:
+        return count
+        #headers = datas
+
+    match = CONTEN_LENGTH.search(headers)
+    if match:
+        content_length = match.groups(0)[0]
+        content_length = content_length.decode('utf8')
+        content_length = int(content_length)
+        if len(contents) == content_length:
+            content = contents
+        elif len(contents) > content_length:
+            content = contents[:content_length]
+            left_datas = contents[content_length:]
+            count += 1
+            datas_parser(left_datas, count)
+
+        else:   #connect error
+            return count
+
+        match = CONTEN_TYPE.search(headers)
+        if match and match.groups(0)[0] == b'image/jpeg':
+            jpg_name = 'test_%d.jpg' % count
+            print('JPG_%d Content Length:%d' % (count, content_length))
+            logger.debug('JPG Content Length:%d' % content_length)
+            logger.debug('all recv JPG headers:%s' % headers)
+            logger.debug('all recv JPG content:%s' % content)
+            jpg_w = open(jpg_name, 'wb')
+            jpg_w.write(content)
+            jpg_w.close()
+            count += 1
+        elif match and match.groups(0)[0] == b'text/html':
+            content = gzip.decompress(content)
+            content = content.decode('utf8')
+            logger.debug('all recv headers:%s' % headers)
+            logger.debug('all recv content:%s' % content)
+        elif match and match.groups(0)[0] == b'audio/mpeg;charset=UTF-8':
+            mp3_name = 'mp3_%d.mp3' % count
+            print('MP3_%d Content Length:%d' % (count, content_length))
+            logger.debug('MP3 Content Length:%d' % content_length)
+            #logger.debug('all recv MP3 headers:%s' % headers)
+            #logger.debug('all recv MP3 content:%s' % content)
+            mp3_w = open(mp3_name, 'wb')
+            mp3_w.write(content)
+            mp3_w.close()
+            count += 1
+
+    return count
 
 
 if __name__=="__main__":
@@ -257,30 +310,8 @@ if __name__=="__main__":
                         if not data:
                             logger.debug('recvive datas from done  :%s' % connections[fd][0])
                             logger.debug('send those datas below to:%s' % connections[fd][1])
-                            match = CONTEN_LENGTH.search(collect_datas[fd])
-                            if match:
-                                datas = collect_datas[fd]
-                                content_length = match.groups(0)[0]
-                                content_length = content_length.decode('utf8')
-                                content_length = int(content_length)
-                                headers = datas[:-content_length]
-                                #headers = headers.decode('utf8')
-                                content = datas[-content_length:]
-                                match = CONTEN_TYPE.search(headers)
-                                if match and match.groups(0)[0] == b'image/jpeg':
-                                    jpg_name = 'test_%d.jpg'%JPG_COUNT
-                                    #print('Content Length:%d' % content_length)
-                                    logger.debug('all recv headers:%s' % headers)
-                                    logger.debug('all recv content:%s' % content)
-                                    jpg_w = open(jpg_name, 'wb')
-                                    jpg_w.write(content)
-                                    jpg_w.close()
-                                    JPG_COUNT += 1
-                                elif match and match.groups(0)[0] == b'text/html':
-                                    content = gzip.decompress(content)
-                                    content = content.decode('utf8')
-                                    logger.debug('all recv headers:%s' % headers)
-                                    logger.debug('all recv content:%s' % content)
+                            datas = collect_datas[fd]
+                            ALL_COUNT = datas_parser(datas, ALL_COUNT)
                             #print('data type:', chardet.detect(collect_datas[fd]))
                             second_file = connections[fd][1].fileno()
                             epoll_fd.unregister(fd)
