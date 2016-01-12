@@ -26,7 +26,7 @@
 
 import socket, struct, errno
 from common import *
-from select import EPOLLIN
+from select import EPOLLIN, EPOLLERR, EPOLLOUT
 
 
 class TcpReplay(object):
@@ -37,14 +37,21 @@ class TcpReplay(object):
         self.remoteinst = remoteinst
         self.loop = loop
         self.inst_dict = inst_dict
-        self.loop.register(self.sockfd, EPOLLIN)
+        self.loop.register(self.sockfd, EPOLLERR|EPOLLIN)
         self.inst_dict[self.sockfd] = self
-        self._left_datas = b''
+        self.left_datas = b''
         self._uncomplete = False
         self._all_recv_datas = b''
 
 
-    def handler_datas(self):
+    def handler_datas(self, flag = 'r'):
+        if flag == 's':
+            #print('can sendddddddd')
+            self.loop.unregister(self.sockfd)
+            self.loop.register(self.sockfd, EPOLLERR|EPOLLIN)
+            self.send_datas(self.left_datas)
+            return
+
         send_datas = b'\x05'
         if self.stage == STAGE_INIT:
             datas = self.recv_datas(2)
@@ -57,6 +64,7 @@ class TcpReplay(object):
                 self.send_datas(send_datas)
                 #need remove socket and instance 
                 self.stage = STAGE_DESTROYED
+                #self.destroy()
                 return
 
             if nmethods > 0:
@@ -87,6 +95,7 @@ class TcpReplay(object):
                 send_datas += b'\x00'
                 self.send_datas(send_datas)
                 self.stage = STAGE_DESTROYED
+                #self.destroy()
                 return
 
             if cmd != 0x01:     #BINd:0x02, UDP ASSOCIATE:0x03 not supported yet
@@ -97,6 +106,7 @@ class TcpReplay(object):
                 send_datas += b'\x00'
                 self.send_datas(send_datas)
                 self.stage = STAGE_DESTROYED
+                #self.destroy()
                 return
 
             if atype == 0x01: #ipv4
@@ -122,6 +132,7 @@ class TcpReplay(object):
                 send_datas += b'\x00'
                 self.send_datas(send_datas)
                 self.stage = STAGE_DESTROYED
+                #self.destroy()
                 return
 
             else:
@@ -132,6 +143,7 @@ class TcpReplay(object):
                 send_datas += b'\x00'
                 self.send_datas(send_datas)
                 self.stage = STAGE_DESTROYED
+                #self.destroy()
                 return
 
             send_datas += b'\x00'
@@ -148,50 +160,74 @@ class TcpReplay(object):
 
         elif self.stage == STAGE_DONE:
             datas = self.recv_datas()
-            print('datas:', datas)
+            #print('datas:', datas)
             if not datas:
                 return
             self._all_recv_datas += datas
             self.remoteinst.send_datas(datas)
-            #self._left_datas += datas
-            #self.remoteinst.send_datas(self._left_datas)
+            #self.left_datas += datas
+            #self.remoteinst.send_datas(self.left_datas)
 
 
     def recv_datas(self, length=BUF_SIZE):
         try:
             datas = self.sock.recv(length)
         except ConnectionResetError as msg:
-            print('catch error message on recv_datas:', msg)
+            #print('catch error message on recv_datas:', msg)
             self.stage = STAGE_DESTROYED
+            #self.destroy()
             return
 
         if datas == b'':
-            print('not recv any datas, mark destroy')
+            #print('not recv any datas, mark destroy')
             self.stage = STAGE_DESTROYED
+            #self.destroy()
 
         return datas
 
 
     def send_datas(self, datas):
-        while 1:
-            try:
-                length = self.sock.send(datas)
-                break
-            except BlockingIOError as msg:
-                if msg.errno == errno.EAGAIN:
-                    print('continue send')
-                    continue
-                print('catach exception on send_datas:%s     %d' % (msg, self.sockfd))
-                #self._left_datas += datas
-                #self._uncomplete = True
-                break
+        try:
+            length = self.sock.send(datas)
+        except BlockingIOError as msg:
+            if msg.errno == errno.EAGAIN or msg.errno == errno.EINPROGRESS or msg.errno == errno.EWOULDBLOCK:
+                #print('modify epoll')
+                self.loop.unregister(self.sockfd)
+                self.loop.register(self.sockfd, EPOLLERR|EPOLLOUT)
+                self.left_datas += datas
+                self._uncomplete = True
+                return
+            print('IOError catach exception on send_datas:%s     %d     %s' % (msg, self.sockfd, self.sock))
+            self.stage = STAGE_DESTROYED
+            #self.destroy()
+            return
+        except OSError as msg:
+            print('OSError catach exception on send_datas:%s     %d     %s' % (msg, self.sockfd, self.sock))
+            print('send those datas error:', datas)
+            self.stage = STAGE_DESTROYED
+            #self.destroy()
+            return
 
-        print('send length:', length)
+        self.left_datas = b''
+        self._uncomplete = False
+        #print('send length:', length)
 
-        #self._left_datas = datas[length:]
+        #self.left_datas = datas[length:]
 
-    def __del__(self):
+    def destroy(self):
         self.loop.unregister(self.sockfd)
         del self.inst_dict[self.sockfd]
-        self.sock.close()
-        print('removed done')
+        #print('inst_dict length:%d' % len(self.inst_dict))
+        #self.sock.close()
+        print('removed done %d      %s' % (self.sockfd, self.sock))
+
+
+#    def destroy(self):
+#        if self.stage == STAGE_DESTROYED:
+#            print('already destroy')
+#            return
+#        self.loop.unregister(self.sockfd)
+#        del self.inst_dict[self.sockfd]
+#        self.sock.close()
+#        print('removed done')
+#        self.stage = STAGE_DESTROYED

@@ -67,7 +67,7 @@ if __name__ == '__main__':
         for fd, events in epoll_list:
             if fd == listen_fd.fileno():
                 conn, addr = listen_fd.accept()
-                print("accept connection from %s, %d, fd = %d" % (addr[0], addr[1], conn.fileno()))
+                #print("accept connection from %s, %d, fd = %d" % (addr[0], addr[1], conn.fileno()))
                 conn.setblocking(0)
                 TcpReplay(conn, epoll_fd, inst_dict)
 
@@ -78,4 +78,12 @@ if __name__ == '__main__':
                     break
                 inst.handler_datas()
                 if inst.stage == STAGE_DESTROYED:
+                    inst.destroy()
                     del inst
+
+            elif select.EPOLLOUT & events:
+                inst = inst_dict.get(fd, None)
+                if not inst:
+                    print('not found this socket inst:%d on EPOLLOUT' % fd)
+                    break
+                inst.handler_datas('s')
