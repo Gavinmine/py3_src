@@ -47,7 +47,7 @@ if __name__ == '__main__':
 
     try:
         # 设置 listen 的 backlog 数
-        listen_fd.listen(100)
+        listen_fd.listen(1000)
     except socket.error as msg:
         print(msg)
 
@@ -58,6 +58,8 @@ if __name__ == '__main__':
         epoll_fd.register(listen_fd.fileno(), select.EPOLLIN)
     except select.error as msg:
         print(msg)
+
+    #listen_fd.setblocking(0)
 
     inst_dict = {}
 
@@ -77,8 +79,7 @@ if __name__ == '__main__':
                     print('not found this socket inst:%d' % fd)
                     break
                 inst.handler_datas()
-                if inst.stage == STAGE_DESTROYED:
-                    inst.destroy()
+                if inst.destroy():
                     del inst
 
             elif select.EPOLLOUT & events:
@@ -87,3 +88,5 @@ if __name__ == '__main__':
                     print('not found this socket inst:%d on EPOLLOUT' % fd)
                     break
                 inst.handler_datas('s')
+                if inst.destroy():
+                    del inst
