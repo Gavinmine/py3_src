@@ -35,9 +35,15 @@ def get_Download(url):
         week = weeks[i]
         class_name = week.find('h3')
         class_name = class_name.get_text()
+        class_name = class_name.encode('utf8')
+        #print('class_name:', class_name)
+        class_name = class_name.split(b' ')
+        class_name.pop(0)
+        class_name.pop(0)
+        class_name = b'_'.join(class_name)
+        class_name = class_name.decode('utf8')
         class_path = os.path.join(CWD, class_name)
-        print('class:', class_path)
-        if not os.path.exists(class_path)
+        if not os.path.exists(class_path):
             os.makedirs(class_path)
 
         os.chdir(class_path)
@@ -49,6 +55,8 @@ def get_Download(url):
             name = heards.get_text()
             name = name.strip('\n')
             name = name.strip(' ')
+            name = name.split(' ')
+            name = '_'.join(name)
             print('default name:', name)
             lecture = resource.find('div', attrs={'class':'course-lecture-item-resource'})
             links = lecture.findAll('a', attrs={'target':'_new'})
@@ -59,24 +67,28 @@ def get_Download(url):
                     continue
                 match = LECTURE.search(href)
                 if match:
-                    #name = match.groups(0)[0]
-                    cmd = 'wget -O %s.pdf %s' % (name, href)
+                    name = match.groups(0)[0]
+                    name = name.strip('\n')
+                    name = name.strip(' ')
+                    name = name.split(' ')
+                    name = '_'.join(name)
+                    cmd = "wget -O '%s.pdf' %s" % (name, href)
                     print(cmd)
                     os.system(cmd)
                 elif TXT.match(href):
-                    cmd = 'wget -O %s.txt %s' % (name, href)
+                    cmd = "wget -O '%s.txt' %s" % (name, href)
                     print(cmd)
                     os.system(cmd)
                 elif SRT.match(href):
-                    cmd = 'wget -O %s.srt %s' % (name, href)
+                    cmd = "wget -O '%s.srt' %s" % (name, href)
                     print(cmd)
                     os.system(cmd)
                 elif MP4.match(href):
-                    cmd = 'wget -O %s.mp4 %s' % (name, href)
+                    cmd = "wget -O '%s.mp4' %s" % (name, href)
                     print(cmd)
                     os.system(cmd)
                 else:
-                    cmd = 'wget -O %s.pptx %s' % (name, href)
+                    cmd = "wget -O '%s.pptx' %s" % (name, href)
                     print(cmd)
                     os.system(cmd)
 
