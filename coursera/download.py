@@ -57,6 +57,7 @@ def get_Download(url):
             name = name.strip(' ')
             name = name.split(' ')
             name = '_'.join(name)
+            name = name.replace('"', ' ')
             print('default name:', name)
             lecture = resource.find('div', attrs={'class':'course-lecture-item-resource'})
             links = lecture.findAll('a', attrs={'target':'_new'})
@@ -72,23 +73,39 @@ def get_Download(url):
                     name = name.strip(' ')
                     name = name.split(' ')
                     name = '_'.join(name)
-                    cmd = "wget -O '%s.pdf' %s" % (name, href)
+                    name = name.replace('"', ' ')
+                    pdf_name = "%s.pdf" % name
+                    if os.path.exists(pdf_name):
+                        continue
+                    cmd = 'wget -O "%s" %s' % (pdf_name, href)
                     print(cmd)
                     os.system(cmd)
                 elif TXT.match(href):
-                    cmd = "wget -O '%s.txt' %s" % (name, href)
+                    txt_name = "%s.txt" % name
+                    if os.path.exists(txt_name):
+                        continue
+                    cmd = 'wget -O "%s" %s' % (txt_name, href)
                     print(cmd)
                     os.system(cmd)
                 elif SRT.match(href):
-                    cmd = "wget -O '%s.srt' %s" % (name, href)
+                    srt_name = "%s.srt" % name
+                    if os.path.exists(srt_name):
+                        continue
+                    cmd = 'wget -O "%s" %s' % (srt_name, href)
                     print(cmd)
                     os.system(cmd)
                 elif MP4.match(href):
-                    cmd = "wget -O '%s.mp4' %s" % (name, href)
+                    mp4_name = "%s.mp4" % name
+                    if os.path.exists(mp4_name):
+                        continue
+                    cmd = 'wget -O "%s" %s' % (mp4_name, href)
                     print(cmd)
                     os.system(cmd)
                 else:
-                    cmd = "wget -O '%s.pptx' %s" % (name, href)
+                    pptx_name = "%s.pptx" % name
+                    if os.path.exists(pptx_name):
+                        continue
+                    cmd = 'wget -O "%s" %s' % (pptx_name, href)
                     print(cmd)
                     os.system(cmd)
 
