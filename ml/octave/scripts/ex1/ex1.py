@@ -27,31 +27,8 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-
-def computeCost(x, y, theta):
-    x_rows, x_cols = x.shape
-    theta_rows, theta_cols = theta.shape
-    if x_cols != theta_rows:
-        print('x_cols:%d, theta_rows:%d' %(x_cols, theta_rows))
-        print("Can not dot, please check")
-        return None
-
-    tmp = np.dot(x,theta)-y
-    sum = (tmp*tmp).sum()
-    return sum/2/x_rows
-
-
-def gradientDescent(x, y, theta, alpha):
-    theta0 = theta[0]
-    theta1 = theta[1]
-    h = np.dot(x,theta)
-    r,c = h.shape
-    tmp = (h-y)*x
-    t0 = theta0 - (tmp[0:,0].sum())/r*alpha
-    t1 = theta1 - (tmp[0:,1].sum())/r*alpha
-    theta[0] = t0
-    theta[1] = t1
-    return theta
+from common import computeCost, gradientDescent
+from mpl_toolkits.mplot3d import Axes3D
 
 if __name__ == '__main__':
     file_name = 'ex1data1.txt'
@@ -65,17 +42,21 @@ if __name__ == '__main__':
     Y = Y.reshape(len(Y), 1)
     r,c = X.shape
     alpha = 0.01
-    theta=np.random.random((c,1))
-    theta[0] = 0
-    theta[1] = 0
-    times = list(range(100))
+    #theta=np.random.random((c,1))
+    theta=np.zeros((c,1))
+    save_times = 1500
+    times = list(range(save_times))
     costs = []
+    theta0 = []
+    theta1 = []
     for i in range(1500):
         #print("Theta: ", theta)
         cost = computeCost(X, Y, theta)
-        print("Cost: ", cost)
-        if i < 100:
+        #print("Cost: ", cost)
+        if i < save_times:
             costs.append(cost)
+            theta0.append(theta[0])
+            theta1.append(theta[1])
         theta = gradientDescent(X, Y, theta, alpha)
 
     print(theta)
@@ -85,8 +66,15 @@ if __name__ == '__main__':
     x = np.linspace(5,25,1000)
     y = theta[0]+theta[1]*x
     plt.plot(x,y)
-    print(costs[0])
-    print(costs[1])
     plt.figure(2)
     plt.plot(times, costs)
+    plt.xlabel("Time(s)")
+    plt.ylabel("Cost(s)")
+    fig = plt.figure(3)
+    ax = fig.gca(projection = '3d')
+    ax.plot(theta0, theta1, costs, label='Curve')
+    ax.legend()
+    ax.set_xlabel('Theta0')
+    ax.set_ylabel('Theta1')
+    ax.set_zlabel('Cost(s)')
     plt.show()
