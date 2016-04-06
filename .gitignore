@@ -1,0 +1,13 @@
+*.mp3
+*.log
+*.pyc
+*.py_bak
+*.log_bak
+*.xls
+*.xlsx
+*.csv
+*.txt
+ml/octave/machine-learning*
+ml/octave/ML_Octave_400_patch
+ml/octave/ML_peer_certificate_patch_A
+test
