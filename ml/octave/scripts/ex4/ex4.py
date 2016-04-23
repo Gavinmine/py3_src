@@ -24,7 +24,7 @@
 import numpy as np
 import pandas as pd
 import scipy.io
-from neural_network import computerCost
+from neural_network import computerCost,gradientDescent,randInitializeWeights
 
 
 if __name__ == "__main__":
@@ -60,10 +60,61 @@ if __name__ == "__main__":
 
     theta1 = np.transpose(theta1)
     theta2 = np.transpose(theta2)
+    lam = 0 
+    J = computerCost(theta1, theta2, X, Y, lam)
+    print('Sum:', J)
     #print('After transpose')
     #print('Theta1:', theta1.shape)
     #print('Theta2:', theta2.shape)
 
-    lam = 1 
-    J = computerCost(theta1, theta2, X, Y, lam)
-    print('Sum:', J)
+    initial_Theta1 = randInitializeWeights(input_layer_size, hidden_layer_size)
+    initial_Theta2 = randInitializeWeights(hidden_layer_size, num_labels)
+    initial_Theta1 = np.transpose(initial_Theta1)
+    initial_Theta2 = np.transpose(initial_Theta2)
+    #print('After transpose')
+    #print('initial_Theta1:', initial_Theta1.shape)
+    #print('initial_Theta2:', initial_Theta2.shape)
+
+    tmp_theta1, tmp_theta2 = gradientDescent(initial_Theta1, initial_Theta2, X, Y, lam)
+
+    #print('tmp_theta1 shape:', tmp_theta1.shape)
+    #print('tmp_theta2 shape:', tmp_theta2.shape)
+
+    #print('tmp_theta1:', tmp_theta1)
+    #print('tmp_theta2:', tmp_theta2)
+
+
+    # Gradient checking
+    num_theta1 = np.zeros(tmp_theta1.shape)
+    num_theta2 = np.zeros(tmp_theta2.shape)
+
+    e = 0.0001
+    j,k = num_theta1.shape
+    for i in range(j):
+        for l in range(k):
+            loss_theta1 = initial_Theta1.copy()
+            theta_v = initial_Theta1[i,l]
+            loss_theta1[i,l] = theta_v + e
+
+            loss_theta2 = initial_Theta1.copy()
+            theta_v = initial_Theta1[i,l]
+            loss_theta2[i,l] = theta_v - e
+
+            num_theta1[i,l] = (computerCost(loss_theta1, initial_Theta2, X, Y, lam) - computerCost(loss_theta2, initial_Theta2, X, Y, lam))/2/e
+
+            print('gd:%f,   num:%f' %(tmp_theta1[i,l], num_theta1[i,l]))
+
+    j,k = num_theta2.shape
+    for i in range(j):
+        for l in range(k):
+            loss_theta1 = initial_Theta2.copy()
+            theta_v = initial_Theta2[i,l]
+            loss_theta1[i,l] = theta_v + e
+
+            loss_theta2 = initial_Theta2.copy()
+            theta_v = initial_Theta2[i,l]
+            loss_theta1[i,l] = theta_v - e
+
+            num_theta2[i,l] = (computerCost(initial_Theta1, loss_theta1, X, Y, lam) - computerCost(initial_Theta1, loss_theta2, X, Y, lam))/2/e
+
+            print('gd:%f,   num:%f' %(tmp_theta2[i,l], num_theta2[i,l]))

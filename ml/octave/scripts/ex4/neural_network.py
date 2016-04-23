@@ -74,6 +74,12 @@ def computerCost(theta1, theta2, X, Y, lam):
     TMP = -Y*np.log(H) - (1-Y)*(np.log(1-H))
     J = TMP.sum()/m+tsum
 
+    return J
+
+
+def gradientDescent(theta1, theta2, X, Y, lam):
+    m = X.shape[0]
+
     #computer theta_grad
     a1 = X
     z2 = np.dot(a1, theta1)
@@ -109,4 +115,5 @@ def computerCost(theta1, theta2, X, Y, lam):
     theta2_grad = theta2_grad/m + req2
     #print('theta1_grad shape:', theta1_grad.shape)
     #print('theta2_grad shape:', theta2_grad.shape)
-    return J
+
+    return theta1_grad, theta2_grad
