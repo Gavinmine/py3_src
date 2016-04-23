@@ -33,6 +33,10 @@ if __name__ == "__main__":
     datas = scipy.io.loadmat(data_name)
     weights = scipy.io.loadmat(weights_name)
 
+    input_layer_size  = 400
+    hidden_layer_size = 25
+    num_labels = 10
+
     X = datas['X']
     y = datas['y']
 
@@ -40,7 +44,7 @@ if __name__ == "__main__":
     ones = np.ones((m,1))
     X = np.c_[ones, X]
 
-    Y = np.zeros((m,10))
+    Y = np.zeros((m,num_labels))
     for i in range(m):
         #顺序很重要
         Y[i, y[i][0]-1] = 1
