@@ -105,12 +105,12 @@ def doPCA(trainName):
 
 def xg_eval_mse(yhat, trainData):
     y = trainData.get_label()
-    return 'mse', mean_squared_error(y, yhat)
+    return 'mse', mean_squared_error(np.exp(y), np.exp(yhat))
 
 
 def xg_eval_mae(yhat, trainData):
     y = trainData.get_label()
-    return 'mse', mean_absolute_error(y, yhat)
+    return 'mse', mean_absolute_error(np.exp(y), np.exp(yhat))
 
 
 def trainXGB(trainName, testName):
@@ -123,6 +123,7 @@ def trainXGB(trainName, testName):
         test[cLabel] = test[cLabel].map(gCatLabel)
 
     allLoss = train['loss']
+    allLoss = np.log(allLoss)
     allTrain = train.drop(['id', 'loss'], axis=1)
 
     trainData, validData, trainLoss, validLoss = train_test_split(allTrain, allLoss, test_size = 0.2, random_state = 234)
@@ -132,7 +133,18 @@ def trainXGB(trainName, testName):
     watchList = [(lossTrain, 'train'), (lossValid, 'valid')]
     param = {'eta':0.1}
     clf = xgb.train(param, lossTrain, 2500, watchList, early_stopping_rounds=30, verbose_eval=20, feval=xg_eval_mse, maximize=False)
-    return clf, test
+
+    testData = test.drop(['id'], axis=1)
+    testData = xgb.DMatrix(testData)
+    testPred = clf.predict(testData)
+    testPred = np.exp(testPred)
+    submission = pd.DataFrame({
+        'id': test['id'],
+        'loss': testPred
+    })
+
+    saveName = 'usingXGB'+'.csv'
+    submission.to_csv(saveName, index=False)
 
 
 def trainning(trainName):
@@ -215,14 +227,4 @@ if __name__ == '__main__':
     trainName = './input/train.csv'
     testName = './input/test.csv'
     #trainning(trainName)
-    clf, test = trainXGB(trainName, testName)
-    testData = test.drop(['id'], axis=1)
-    testData = xgb.DMatrix(testData)
-    testPred = clf.predict(testData)
-    submission = pd.DataFrame({
-        'id': test['id'],
-        'loss': testPred
-    })
-
-    saveName = 'usingXGB'+'.csv'
-    submission.to_csv(saveName, index=False)
+    trainXGB(trainName, testName)
