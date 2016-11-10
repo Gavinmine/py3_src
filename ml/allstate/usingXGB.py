@@ -75,23 +75,23 @@ def transData(transName, saveName):
     train.to_csv(saveName)
 
 
-def doPCA(trainName):
-    trans = pd.read_csv(trainName)
-    transPixels = trans.iloc[:, 2:118]
+def doPCA(train):
+    transPixels = train.iloc[:, 1:117]
     transPixelsArray = transPixels.values
-    pca = PCA(n_components=10, whiten=True)
+    dim = 30
+    pca = PCA(n_components=dim, whiten=True)
     pca.fit(transPixelsArray)
     afterTransPixels = pca.transform(transPixelsArray)
 
     transLabels = []
-    for i in range(10):
+    for i in range(dim):
         label = 'afterCat' + str(i+1)
         transLabels.append(label)
 
     afterTransData = pd.DataFrame(afterTransPixels, columns=transLabels)
     for i in range(14):
         contName = 'cont' + str(i+1)
-        afterTransData[contName] = trans[contName]
+        afterTransData[contName] = train[contName]
 
     return afterTransData
 
@@ -121,6 +121,7 @@ def trainXGB(trainName, testName):
         gCatLabel = train.groupby(train[cLabel])['loss'].mean()
         train[cLabel] = train[cLabel].map(gCatLabel)
         test[cLabel] = test[cLabel].map(gCatLabel)
+        test[cLabel].fillna(test[cLabel].mean(), inplace=True)
 
     allLoss = train['loss']
     allLoss = np.log(allLoss)
@@ -131,7 +132,8 @@ def trainXGB(trainName, testName):
     lossValid = xgb.DMatrix(validData, validLoss)
 
     watchList = [(lossTrain, 'train'), (lossValid, 'valid')]
-    param = {'eta':0.1}
+    param = {'eta':0.01, 'seed':110, 'colsample_bytree':0.7, 'silent':1, 'subsample':0.7, 'learning_rate':0.02, 'objective':'reg:linear', 'max_depth':7, 'min_child_weight':1}
+    #param = {'eta':0.01, 'seed':120, 'colsample_bytree':0.7, 'silent':1, 'subsample':0.7, 'learning_rate':0.02, 'max_depth':7, 'min_child_weight':1}
     clf = xgb.train(param, lossTrain, 2500, watchList, early_stopping_rounds=30, verbose_eval=20, feval=xg_eval_mse, maximize=False)
 
     testData = test.drop(['id'], axis=1)
@@ -143,7 +145,7 @@ def trainXGB(trainName, testName):
         'loss': testPred
     })
 
-    saveName = 'usingXGB'+'.csv'
+    saveName = 'usingXGB_0.01'+'.csv'
     submission.to_csv(saveName, index=False)
 
 
