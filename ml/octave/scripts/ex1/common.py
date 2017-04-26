@@ -40,7 +40,7 @@ def computeCost(x, y, theta):
     return sum/2/x_rows
 
 
-def gradientDescent(x, y, theta, alpha=1):
+def gradientDescent(x, y, theta, alpha=0.01):
     h = np.dot(x,theta)
     r,c = x.shape
     tmp = (h-y)*x

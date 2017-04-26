@@ -115,7 +115,7 @@ def chooseBestFeatureToSplit(dataSet):
 
 def chooseBestFeatureToSplitWithMissed(dataSet):
     numFeatures = len(dataSet[0]) - 1
-    bestInfoGain = 0.0
+    bestInfoGain = -100.0
     bestFeature = -1
     totalLen = float(len(dataSet))
     for i in range(numFeatures):

@@ -215,10 +215,9 @@ class TcpReplay(object):
 
         self.loop.unregister(self.sockfd)
         del self.inst_dict[self.sockfd]
-        #print('inst_dict length:%d' % len(self.inst_dict))
-        #self.sock.close()
-        self._datas_Parser()
-        print('removed done %d      %s' % (self.sockfd, self.sock))
+        self.sock.close()
+        #self._datas_Parser()
+        #print('removed done %d      %s' % (self.sockfd, self.sock))
         return True
 
 

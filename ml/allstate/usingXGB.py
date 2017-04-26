@@ -132,7 +132,7 @@ def trainXGB(trainName, testName):
     lossValid = xgb.DMatrix(validData, validLoss)
 
     watchList = [(lossTrain, 'train'), (lossValid, 'valid')]
-    param = {'eta':0.01, 'seed':110, 'colsample_bytree':0.7, 'silent':1, 'subsample':0.7, 'learning_rate':0.02, 'objective':'reg:linear', 'max_depth':7, 'min_child_weight':1}
+    param = {'eta':0.01, 'seed':110, 'colsample_bytree':0.7, 'silent':1, 'subsample':0.7, 'learning_rate':0.02, 'objective':'reg:linear', 'max_depth':12, 'min_child_weight':1}
     #param = {'eta':0.01, 'seed':120, 'colsample_bytree':0.7, 'silent':1, 'subsample':0.7, 'learning_rate':0.02, 'max_depth':7, 'min_child_weight':1}
     clf = xgb.train(param, lossTrain, 2500, watchList, early_stopping_rounds=30, verbose_eval=20, feval=xg_eval_mse, maximize=False)
 

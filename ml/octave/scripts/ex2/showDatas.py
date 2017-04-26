@@ -56,4 +56,5 @@ def classificationFigure(X, Y):
         elif len(columns) == 3:
             ax.plot(X[index, 0], X[index, 1], X[index, 2], marks[i])
 
-    plt.show()
+    #plt.show()
+    return plt

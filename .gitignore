@@ -5,7 +5,6 @@
 *.log_bak
 *.xls
 *.xlsx
-*.csv
 *.txt
 ml/octave/machine-learning*
 ml/octave/ML_Octave_400_patch

@@ -121,6 +121,14 @@ def gradientDescent(theta1, theta2, X, Y, lam):
     return theta1_grad, theta2_grad
 
 
+def cost_Grad(theta, input_layer_size, hidden_layer_size, num_labels, X, Y, lam):
+    J = computer_Cost(theta, input_layer_size, hidden_layer_size, num_labels, X, Y, lam)
+    nn_params = gradient_Descent(theta, input_layer_size, hidden_layer_size, num_labels, X, Y, lam)
+
+    #print('Cost:', J)
+    return (J, nn_params)
+
+
 def computer_Cost(theta, input_layer_size, hidden_layer_size, num_labels, X, Y, lam):
     theta = np.asarray(theta, dtype=np.float64)
     theta1 = theta[0:hidden_layer_size*(input_layer_size+1)]
@@ -207,7 +215,8 @@ def gradient_Descent(theta, input_layer_size, hidden_layer_size, num_labels, X, 
     theta1_grad = theta1_grad.T
     theta2_grad = theta2_grad.T
 
-    nn_params = np.append(theta1_grad, theta2_grad)
+    #nn_params = np.append(theta1_grad, theta2_grad)
+    nn_params = np.hstack([theta1_grad.flatten(),theta2_grad.flatten()])
 
     return nn_params
 
@@ -250,6 +259,30 @@ def nnCostFunction(nn_params, input_layer_size, hidden_layer_size, num_labels, f
     J = -1*(1/m)*np.sum((np.log(a3.T)*(y_matrix)+np.log(1-a3).T*(1-y_matrix))) + \
             (reg/(2*m))*(np.sum(np.square(theta1[:,1:])) + np.sum(np.square(theta2[:,1:])))
 
+    return J
+
+
+def nnGradFunction(nn_params, input_layer_size, hidden_layer_size, num_labels, features, classes, reg):
+    theta1 = nn_params[0:(hidden_layer_size*(input_layer_size+1))].reshape(hidden_layer_size,(input_layer_size+1))
+    theta2 = nn_params[(hidden_layer_size*(input_layer_size+1)):].reshape(num_labels,(hidden_layer_size+1))
+
+    m = features.shape[0]
+    y_matrix = pd.get_dummies(classes.ravel()).as_matrix()
+
+    #Cost
+    al = features   #5000*401
+
+    z2 = theta1.dot(al.T)   #25*401 * 401*5000 = 25*5000
+    a2 = np.c_[np.ones((features.shape[0], 1)), sigmoid(z2.T)]  #5000*26
+
+    z3 = theta2.dot(a2.T)   # 10*26 * 26 * 5000 = 10*5000
+    a3 = sigmoid(z3)    #10*5000
+
+    #print('a3.T shape:', a3.T.shape)
+    #print('y_matrix shape:', y_matrix.shape)
+    J = -1*(1/m)*np.sum((np.log(a3.T)*(y_matrix)+np.log(1-a3).T*(1-y_matrix))) + \
+            (reg/(2*m))*(np.sum(np.square(theta1[:,1:])) + np.sum(np.square(theta2[:,1:])))
+
     # Gradients
     d3 = a3.T - y_matrix    #5000*10
     d2 = theta2[:, 1:].T.dot(d3.T)*sigmoidGradient(z2)  #25*10 * 10*5000 * 25*5000 = 25*5000
@@ -258,9 +291,11 @@ def nnCostFunction(nn_params, input_layer_size, hidden_layer_size, num_labels, f
     delta2 = d3.T.dot(a2)   #10*5000 * 5000*26 = 10*26
 
     theta1_ = np.c_[np.ones((theta1.shape[0], 1)), theta1[:, 1:]]
-    theta2_ = np.c_[np.ones((theta1.shape[0], 1)), theta2[:, 1:]]
+    theta2_ = np.c_[np.ones((theta2.shape[0], 1)), theta2[:, 1:]]
 
     theta1_grad = delta1/m + (theta1_*reg)/m
     theta2_grad = delta2/m + (theta2_*reg)/m
 
-    return(J, theta1_grad, theta2_grad)
+    return np.append(theta1_grad, theta2_grad)
+    #return(J, theta1_grad, theta2_grad)
+    #return(J, np.hstack([theta1_grad.flatten(),theta2_grad.flatten()]))

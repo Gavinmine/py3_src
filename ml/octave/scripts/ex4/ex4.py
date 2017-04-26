@@ -61,7 +61,7 @@ if __name__ == "__main__":
 
     theta1 = np.transpose(theta1)
     theta2 = np.transpose(theta2)
-    lam = 0 
+    lam = 1 
     J = computerCost(theta1, theta2, X, Y, lam)
     print('Sum:', J)
     #print('After transpose')

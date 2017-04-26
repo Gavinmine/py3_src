@@ -25,11 +25,9 @@
 
 
 import pandas as pd
+import numpy as np
 from sklearn.ensemble import GradientBoostingRegressor
-
-
-def getTime(dateTime):
-    return int(dateTime.split(' ')[1].split(':')[0])
+from common import getTime, getMonth
 
 
 def main():
@@ -42,25 +40,41 @@ def main():
 
     datetime = train['datetime']
     time = datetime.apply(getTime)
+    month = datetime.apply(getMonth)
 
     dropTrainDatetimeTrain = train.drop(labels='datetime', axis = 1)
     dropTrainDatetimeTrain['time'] = time
+    dropTrainDatetimeTrain['month'] = month
 
+    #predictors = ['month', 'time', 'season', 'holiday', 'workingday', 'weather', 'temp', 'atemp', 'humidity', 'windspeed']
     predictors = ['time', 'season', 'holiday', 'workingday', 'weather', 'temp', 'atemp', 'humidity', 'windspeed']
-    est = GradientBoostingRegressor(n_estimators=1000, max_depth=6, loss='lad')
+    los = 'lad'
+    treeNum = 1500
+    est = GradientBoostingRegressor(n_estimators=treeNum, max_depth=6, loss=los)
+    #est = GradientBoostingRegressor(n_estimators=1000, max_depth=6, max_features=3, loss=los)
 
 
     datetime = test['datetime']
     time = datetime.apply(getTime)
+    month = datetime.apply(getMonth)
 
     dropTestDatetimeTrain = test.drop(labels='datetime', axis = 1)
     dropTestDatetimeTrain['time'] = time
+    dropTestDatetimeTrain['month'] = month
 
-    est.fit(dropTrainDatetimeTrain[predictors], dropTrainDatetimeTrain['casual'])
+    trainCasual = dropTrainDatetimeTrain['casual'].values
+    trainCasual = trainCasual + 1
+    tranCasual = np.log(trainCasual)
+    est.fit(dropTrainDatetimeTrain[predictors], tranCasual)
     casual = est.predict(dropTestDatetimeTrain[predictors])
+    casual = np.exp(casual) - 1
 
-    est.fit(dropTrainDatetimeTrain[predictors], dropTrainDatetimeTrain['registered'])
+    trainRegistered = dropTrainDatetimeTrain['registered'].values
+    trainRegistered = trainRegistered + 1
+    tranRegistered = np.log(trainRegistered)
+    est.fit(dropTrainDatetimeTrain[predictors], tranRegistered)
     registered = est.predict(dropTestDatetimeTrain[predictors])
+    registered = np.exp(registered) - 1
     predCount = casual + registered
 
     #est.fit(dropTrainDatetimeTrain[predictors], dropTrainDatetimeTrain['count'])
@@ -69,6 +83,7 @@ def main():
     #print(predCount.shape)
     for i in range(len(predCount)):
         if predCount[i] < 0:
+            print('registered:', predCount[i])
             predCount[i] = 1
 
     submission = pd.DataFrame({
@@ -76,7 +91,8 @@ def main():
         'count': predCount
     })
 
-    submission.to_csv('usingGBRT.csv', index=False)
+    saveName = 'usingGBRT'+'_'+los+str(treeNum)+'.csv'
+    submission.to_csv(saveName, index=False)
 
 
 if __name__ == '__main__':

@@ -44,17 +44,18 @@ if __name__ == '__main__':
     alpha[1] = 0.001
     alpha[2] = 0.001
     theta=np.zeros((c,1))
-    #cost = computerCost(X, Y, theta)
+    #cost = computerCost(theta, X, Y)
     #print('cost:', cost)
     save_times = 1000
     times = list(range(save_times))
     costs = []
-    for i in range(4000):
-        cost = computerCost(X, Y, theta)
+    for i in range(6000):
+        cost = computerCost(theta, X, Y)
         if i < save_times:
             costs.append(cost)
 
-        theta = gradientDescent(X, Y, theta, alpha)
+        theta = gradientDescent(theta, X, Y, alpha)
+        theta = theta.reshape(c,1)
         #if i < 10:
         #    print('Theta:', theta)
 

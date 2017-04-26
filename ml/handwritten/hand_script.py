@@ -41,9 +41,20 @@ for i in range(count):
     pixel = 'pixel'+str(i)
     predictors.append(pixel)
 
+#describes = hand.describe()
+#for d in describes:
+#    pixel = describes[d]
+#    if pixel['min'] == 0.0 and pixel['max'] == 0.0:
+#        predictors.remove(d)
+
+print("Length:%d" % len(predictors))
+
 alg = LogisticRegression(random_state=1)
 alg.fit(hand[predictors], hand["label"])
-predicts = alg.predict(test[predictors])
+score = alg.score(hand[predictors], hand["label"])
+print("Score:", score)
+
+#predicts = alg.predict(test[predictors])
 
 #for i in range(10):
 #    alg = LogisticRegression(random_state=1)
@@ -63,10 +74,12 @@ predicts = alg.predict(test[predictors])
 #    preds.append(pred)
 #
 #
-print(predicts)
-submission = pd.DataFrame({
-    "ImageId": range(1, len(test)+1),
-    "label": predicts
-})
 
-submission.to_csv('kaggle.csv', index=False)
+
+#print(predicts)
+#submission = pd.DataFrame({
+#    "ImageId": range(1, len(test)+1),
+#    "label": predicts
+#})
+#
+#submission.to_csv('predicts.csv', index=False)
