@@ -8,13 +8,7 @@
 import scrapy
 
 
-class TutorialItem(scrapy.Item):
+class DoubanItem(scrapy.Item):
     # define the fields for your item here like:
     # name = scrapy.Field()
     pass
-
-
-class doubanItem(scrapy.Item):
-    title = scrapy.Field()
-    link = scrapy.Filed()
-    desc = scrapy.Field()

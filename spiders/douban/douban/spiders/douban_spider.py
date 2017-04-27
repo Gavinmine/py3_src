@@ -1,4 +1,5 @@
 import scrapy
+from douban.settings import *
 
 class doubanSpider(scrapy.Spider):
     name = "douban"
@@ -7,6 +8,9 @@ class doubanSpider(scrapy.Spider):
             "https://movie.douban.com/subject/26260853/",
             "https://movie.douban.com/subject/7065334/"
         ]
+
+    def __init__(self):
+        self.headers =HEADER
 
     def parse(self, response):
         filename = response.url.split("/")[-2]
