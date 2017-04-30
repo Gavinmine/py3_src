@@ -10,5 +10,17 @@ import scrapy
 
 class DoubanItem(scrapy.Item):
     # define the fields for your item here like:
-    # name = scrapy.Field()
-    pass
+    name = scrapy.Field()
+    votes = scrapy.Field()
+    average = scrapy.Field()
+    directed = scrapy.Field()
+    # script = scrapy.Field()
+    actor = scrapy.Field()
+    genre = scrapy.Field()
+    # ProducerCountry = scrapy.Field()
+    # language = scrapy.Field()
+    ReleaseDate = scrapy.Field()
+    runTime = scrapy.Field()
+    url = scrapy.Field()
+    describe = scrapy.Field()
+    starts = scrapy.Field()
