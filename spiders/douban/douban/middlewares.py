@@ -5,7 +5,7 @@
 # See documentation in:
 # http://doc.scrapy.org/en/latest/topics/spider-middleware.html
 
-from scrapy import signals
+from scrapy import signals, exceptions
 import random
 # import base64
 from douban.settings import PROXIES, USER_AGENTS
@@ -64,18 +64,42 @@ class RandomUserAgent(object):
 
     @classmethod
     def process_request(self, request, spider):
-        # print "**************************" + random.choice(self.agents)
         request.headers.setdefault('User-Agent', random.choice(USER_AGENTS))
 
 
 class ProxyMiddleware(object):
+
+    def __init__(self):
+        self.proxies = PROXIES
+
     def process_request(self, request, spider):
-        proxy = random.choice(PROXIES)
-        # if proxy['user_pass'] is not None:
-        #     request.meta['proxy'] = "http://%s" % proxy['ip_port']
-        #     encoded_user_pass = base64.encodebytes(proxy['user_pass'])
+        self.proxy = random.choice(self.proxies)
+        # if self.proxy['user_pass'] is not None:
+        #     request.meta['proxy'] = "http://%s" % self.proxy['ip_port']
+        #     encoded_user_pass = base64.encodebytes(self.proxy['user_pass'])
         #     request.headers['Proxy-Authorization'] = 'Basic ' + encoded_user_pass
-        #     # print "**************ProxyMiddleware have pass************" + proxy['ip_port']
         # else:
-            # print "**************ProxyMiddleware no pass************" + proxy['ip_port']
-        request.meta['proxy'] = "http://%s" % proxy['ip_port']
+        request.meta['proxy'] = "http://%s" % self.proxy['ip_port']
+
+
+    def process_response(self, request, response, spider):
+        spider.logger.info("status:%d" % response.status)
+        if response.status == 200:
+            return response
+        elif response.status == 404:
+            spider.logger.info("Iiiiiiignore 404 error")
+            raise exceptions.IgnoreRequest
+        elif response.status == 403:
+            spider.logger.info("This proxy %s has been blocked, remove it and request" % self.proxy)
+            try:
+                self.proxies.remove(self.proxy)
+            except ValueError:
+                spider.logger.info("proxy has already removed")
+            raise exceptions.IgnoreRequest
+        else:
+            return request
+
+    def process_exception(self, request, exception, spider):
+        spider.logger.info("exception %s on %s, removed it from proxies" % (exception, self.proxy))
+        self.proxies.remove(self.proxy)
+        return request
