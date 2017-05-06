@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import scrapy
 from scrapy.http import Request,FormRequest
 from douban.settings import *
@@ -20,7 +22,7 @@ class doubanSpider(CrawlSpider):
     rules = (
         # 将所有符合正则表达式的url请求后下载网页代码, 形成response后调用自定义回调函数
         # Rule(LinkExtractor(allow=(r'https://movie\.douban\.com/subject/\d+',)), callback='parse_page', follow=True),
-        Rule(LinkExtractor(allow=(r'https://movie\.douban\.com/subject/\d+/$',)), callback='parse_page', follow=True),
+        Rule(LinkExtractor(allow=(r'https://movie\.douban\.com/subject/\d+/\?from=subject\-page',)), callback='parse_page', follow=True),
     )
 
 

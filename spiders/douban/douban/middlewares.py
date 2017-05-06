@@ -94,8 +94,8 @@ class ProxyMiddleware(object):
             try:
                 self.proxies.remove(self.proxy)
             except ValueError:
-                spider.logger.info("proxy has already removed")
-            raise exceptions.IgnoreRequest
+                spider.logger.info("proxy has already removed, try again")
+            return request
         else:
             return request
 

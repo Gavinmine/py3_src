@@ -7,11 +7,14 @@
 
 import json
 from scrapy.exceptions import DropItem
+from pymongo import MongoClient
 
 class DoubanPipeline(object):
     def __init__(self):
-        self.file = open('douban_items.jl', 'w')
-
+        # self.file = open('douban_items.jl', 'w')
+        self.mongoClient = MongoClient("mongodb://douban:douban@127.0.0.1:27017/doubandb")
+        self.db = self.mongoClient['doubandb']
+        self.coll = self.db['movies']
 
     def process_item(self, item, spider):
         try:
@@ -23,6 +26,8 @@ class DoubanPipeline(object):
             item['votes'] = item['votes'][0]
         except IndexError:
             item['votes'] = 0
+
+        item['votes'] = int(item['votes'])
 
         try:
             item['average'] = item['average'][0]
@@ -43,9 +48,12 @@ class DoubanPipeline(object):
 
         # spider.logger.info('###################save item to local file################################')
         # json.dump(dict(item), self.file)
-        line = json.dumps(dict(item)) + "\n"
-        self.file.write(line)
+        # line = json.dumps(dict(item)) + "\n"
+        # self.file.write(line)
+
+        self.coll.insert(dict(item))
         return item
 
     def close_spider(self, spider):
-        self.file.close()
+        # self.file.close()
+        self.mongoClient.close()
