@@ -121,21 +121,11 @@ USER_AGENTS = [
     "Opera/9.80 (Macintosh; Intel Mac OS X 10.6.8; U; fr) Presto/2.9.168 Version/11.52",
 ]
 
-PROXIES = [
-    {'ip_port': '119.5.1.53:808', 'user_pass': ''},
-    {'ip_port': '175.155.25.27:808', 'user_pass': ''},
-    {'ip_port': '119.5.0.28:808', 'user_pass': ''},
-    {'ip_port': '42.88.29.235:8998', 'user_pass': ''},
-    {'ip_port': '222.85.39.166:808', 'user_pass': ''},
-    {'ip_port': '175.162.64.103:80', 'user_pass': ''},
-    {'ip_port': '58.23.16.240:80', 'user_pass': ''},
-    {'ip_port': '180.173.221.160:9797', 'user_pass': ''},
-    {'ip_port': '115.231.105.109:8081', 'user_pass': ''},
-    {'ip_port': '222.22.92.131:8998', 'user_pass': ''},
-    {'ip_port': '222.161.56.166:9000', 'user_pass': ''},
-    {'ip_port': '115.231.175.68:8081', 'user_pass': ''},
-    {'ip_port': '101.5.145.43:8123', 'user_pass': ''},
-]
+# PROXIES = [
+#     {'ip_port': '119.5.1.53:808', 'user_pass': ''},
+# ]
+
+
 # COOKIES = {
 #     "Cookie":'bid=oGf7e-Q4iYI; ll="108300"; ap=1; _is_first_access=user1493291598; _pk_ref.100001.4cf6=%5B%22%22%2C%22%22%2C1493305147%2C%22https%3A%2F%2Fwww.douban.com%2Fsearch%3Fq%3Dthis%2Bis%2Bus%22%5D; __utmt=1; _pk_id.100001.4cf6=6b5547e54b9226a1.1483847431.6.1493305903.1493291692.; _pk_ses.100001.4cf6=*; __utma=30149280.941994995.1483847362.1493291541.1493305147.15; __utmb=30149280.1.10.1493305147; __utmc=30149280; __utmz=30149280.1491733406.12.11.utmcsr=google|utmccn=(organic)|utmcmd=organic|utmctr=(not%20provided); __utma=223695111.417144819.1483847431.1493291541.1493305147.6; __utmb=223695111.0.10.1493305147; __utmc=223695111; __utmz=223695111.1486563873.3.3.utmcsr=douban.com|utmccn=(referral)|utmcmd=referral|utmcct=/search; _vwo_uuid_v2=9EC51B92DA47901FD9F4B2FA6742A923|313754330d6bec8511d45d5552c08124',
 # }

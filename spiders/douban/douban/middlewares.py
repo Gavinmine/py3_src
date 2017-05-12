@@ -8,7 +8,8 @@
 from scrapy import signals, exceptions
 import random
 # import base64
-from douban.settings import PROXIES, USER_AGENTS
+from douban.settings import USER_AGENTS, PROXIES
+from douban.getproxies import getKuaiDaiLiProxies
 
 
 class DoubanSpiderMiddleware(object):
@@ -70,16 +71,18 @@ class RandomUserAgent(object):
 class ProxyMiddleware(object):
 
     def __init__(self):
-        self.proxies = PROXIES
+        self.proxies = getKuaiDaiLiProxies(1)
 
     def process_request(self, request, spider):
         self.proxy = random.choice(self.proxies)
+        request.meta['proxy'] = "http://%s" % self.proxy
+
         # if self.proxy['user_pass'] is not None:
         #     request.meta['proxy'] = "http://%s" % self.proxy['ip_port']
         #     encoded_user_pass = base64.encodebytes(self.proxy['user_pass'])
         #     request.headers['Proxy-Authorization'] = 'Basic ' + encoded_user_pass
         # else:
-        request.meta['proxy'] = "http://%s" % self.proxy['ip_port']
+        #     request.meta['proxy'] = "http://%s" % self.proxy['ip_port']
 
 
     def process_response(self, request, response, spider):
