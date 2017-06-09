@@ -7,12 +7,10 @@
 
 from scrapy import signals, exceptions
 import random
-# import base64
-from douban.settings import USER_AGENTS
-from douban.getproxies import getKuaiDaiLiProxies
+from lagou.settings import USER_AGENTS
 
 
-class DoubanSpiderMiddleware(object):
+class LagouSpiderMiddleware(object):
     # Not all methods need to be defined. If a method is not defined,
     # scrapy acts as if the spider middleware does not modify the
     # passed objects.
@@ -88,43 +86,3 @@ class RandomUserAgent(object):
             return request
         else:
             raise exceptions.IgnoreRequest
-
-
-class ProxyMiddleware(object):
-
-    def __init__(self):
-        self.proxies = getKuaiDaiLiProxies(1)
-
-    def process_request(self, request, spider):
-        self.proxy = random.choice(self.proxies)
-        request.meta['proxy'] = "http://%s" % self.proxy
-
-        # if self.proxy['user_pass'] is not None:
-        #     request.meta['proxy'] = "http://%s" % self.proxy['ip_port']
-        #     encoded_user_pass = base64.encodebytes(self.proxy['user_pass'])
-        #     request.headers['Proxy-Authorization'] = 'Basic ' + encoded_user_pass
-        # else:
-        #     request.meta['proxy'] = "http://%s" % self.proxy['ip_port']
-
-
-    def process_response(self, request, response, spider):
-        spider.logger.info("status:%d" % response.status)
-        if response.status == 200:
-            return response
-        elif response.status == 404:
-            spider.logger.info("Iiiiiiignore 404 error")
-            raise exceptions.IgnoreRequest
-        elif response.status == 403:
-            spider.logger.info("This proxy %s has been blocked, remove it and request" % self.proxy)
-            try:
-                self.proxies.remove(self.proxy)
-            except ValueError:
-                spider.logger.info("proxy has already removed, try again")
-            return request
-        else:
-            return request
-
-    def process_exception(self, request, exception, spider):
-        spider.logger.info("exception %s on %s, removed it from proxies" % (exception, self.proxy))
-        self.proxies.remove(self.proxy)
-        return request

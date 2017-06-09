@@ -34,6 +34,8 @@ class DoubanPipeline(object):
         except IndexError:
             item['average'] = 0
 
+        item['average'] = float(item['average'])
+
         # item['directed'] = item['directed'][0]
 
         try:
