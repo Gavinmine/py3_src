@@ -5,18 +5,21 @@ from scrapy.selector import Selector
 from scrapy.spiders import CrawlSpider, Rule
 from scrapy.linkextractors import LinkExtractor
 
-DUTY = '岗位职责：\xa0'
-REQU = '任职要求：\xa0'
+# DUTYS = ['岗位职责：\xa0', '工作内容：', '岗位职责：']
+# REQUS = ['任职要求：\xa0', '工作要求：', '任职资格：']
+# ENDS = ['加入我们你将获得：']
 
 class lagouSpider(CrawlSpider):
     name = "lagou"
-    allowed_domains = ['www.lagou.com']
+    allowed_domains = ['www.lagou.com', 'm.lagou.com']
     start_urls = [
-        'https://www.lagou.com/jobs/list_%E6%95%B0%E6%8D%AE%E5%88%86%E6%9E%90?labelWords=&fromSearch=true&suginput=',
+        # 'https://www.lagou.com/jobs/list_%E6%95%B0%E6%8D%AE%E5%88%86%E6%9E%90?labelWords=&fromSearch=true&suginput=',
+        'https://www.lagou.com/jobs/3093768.html',
     ]
 
     rules = (
-        Rule(LinkExtractor(allow=(r'https://www.lagou.com/jobs/3093768.html',)), callback='parse_page', follow=True)
+        Rule(LinkExtractor(allow=(r'https://www\.lagou\.com/jobs/\d+\.html.*',)), callback='parse_page', follow=True),
+        Rule(LinkExtractor(allow=(r'https://m\.lagou\.com/jobs/\d+\.html.*',)), callback='parse_page', follow=True),
     )
 
     def parse_page(self, response):
@@ -29,11 +32,18 @@ class lagouSpider(CrawlSpider):
             return item
 
         description = sel.xpath('//dd[@class="job_bt"]/div/p/text()').extract()
-        try:
-            dutyIndex = description.index(DUTY)
-            requIndex = description.index(REQU)
-        except ValueError:
-            return item
+        # print("description:", description)
+
+        all = []
+        for d in description:
+            try:
+                int(d[0])
+            except ValueError:
+                pass
+            else:
+                all.append(d)
+
+        last = int(all[-1][0])
 
         item['name'] = sel.xpath('//div[@class="job-name"]/span[@class="name"]/text()').extract()
         item['salary'] = sel.xpath('//dd[@class="job_request"]/p/span[@class="salary"]/text()').extract()
@@ -46,6 +56,6 @@ class lagouSpider(CrawlSpider):
         item['labels'] = sel.xpath('//ul[@class="position-label clearfix"]/li/text()').extract()
         item['advantage'] = sel.xpath('//dd[@class="job-advantage"]/p/text()').extract()
 
-        item['description'] = description[dutyIndex+1, requIndex]
-        item['requirements'] = description[requIndex+1, len(description)]
+        item['description'] = all[0:-last]
+        item['requirements'] = all[-last:]
         return item

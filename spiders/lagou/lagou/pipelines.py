@@ -11,7 +11,7 @@ from re import compile
 
 
 class LagouPipeline(object):
-    def __inti__(self):
+    def __init__(self):
         self.mongoClient = MongoClient("mongodb://lagou:lagou@127.0.0.1:27017/lagoudb")
         self.db = self.mongoClient['lagoudb']
         self.jobs = self.db['db_parse_jobs']
@@ -20,9 +20,12 @@ class LagouPipeline(object):
         self.edpat = compile(r'(\w+)及以上')
 
     def process_item(self, item, spider):
-        if item['city'] == None or item['description'] == None:
+        if item.get('city') == None or item.get('description') == None:
             self.urls.insert(dict(item))
             raise DropItem('Missing city or description in %s' % item)
+
+        item['city'] = item['city'].strip('/')
+        item['city'] = item['city'].strip(' ')
 
         try:
             item['name'] = item['name'][0]
@@ -62,6 +65,16 @@ class LagouPipeline(object):
             raise DropItem('Missing advantage in %s' % item)
 
         item['advantage'] = item['advantage'].split(',')
+
+        item['description'] = [i.strip('\xa0') for i in item['description']]
+        item['description'] = [i.strip(' ') for i in item['description']]
+        for desc in item['description']:
+            if desc == '':
+                item['description'].remove(desc)
+
+        item['requirements'] = [i.strip('\xa0') for i in item['requirements']]
+        item['requirements'] = [i.strip(' ') for i in item['requirements']]
+
 
         self.jobs.insert(dict(item))
 
