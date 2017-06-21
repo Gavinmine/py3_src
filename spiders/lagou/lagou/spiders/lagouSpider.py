@@ -1,24 +1,18 @@
 #coding:utf-8
-import sys
-# reload(sys)
-# sys.path.append('..')
-# sys.setdefaultencoding('utf-8')
-from datetime import datetime
-import  json
+
+import json
 import requests
-from lxml import etree
 from scrapy.http import FormRequest
-from scrapy.selector import  Selector
+from scrapy.selector import Selector
 from scrapy.spiders import CrawlSpider
-from urllib.parse import quote
-#from items import LagouItem
+from lagou.items import LagouItem
 
 class Lagouspider(CrawlSpider):
     name='lagouspider'
-    city_list=['北京']
-    # city_list=['北京','上海','广州','深圳','青岛']
-    position_list=['数据分析']
     base_url='https://www.lagou.com/jobs/list_%s?px=default&city=%s'
+    jsonUrl = "https://www.lagou.com/jobs/positionAjax.json?px=default&needAddtionalResult=false"
+    baseJobUrl = "https://www.lagou.com/jobs/%d.html"
+
     cookies={
         "user_trace_token":"20170409181541-dd5a3f6254e846e0984aa4e2aa76967b",
         "LGUID":"20170409181542-7c9b90ec-1d0d-11e7-bff0-525400f775ce",
@@ -50,72 +44,76 @@ class Lagouspider(CrawlSpider):
         "X-Requested-With":"XMLHttpRequest"
         }
 
+    def getAllJobsInfo(self):
+        postData = {'first': 'true', 'kd': '数据分析', 'pn': '1'}
+        content = requests.post(self.jsonUrl, headers=self.headers, cookies=self.cookies, data=postData).content
+        content = content.decode("utf-8")
+        jsonData = json.loads(content)
+        totalCount = jsonData['content']['positionResult']['totalCount']
+        pages = int(totalCount/15)
+        return pages
 
-    def get_combine_list(self):
-        combine_list=[]
-        for position in self.position_list:
-            position = quote(position)
-            for city in self.city_list:
-                dict={}
-                city = quote(city)
-                url=self.base_url % (position,city)
-                postData = {'first': 'true', 'kd': '数据分析', 'pn': '1'}
-                html=requests.post(url,headers=self.headers, data=postData).content
-                # print('html:',html)
-                f = open('data.html', 'w')
-                f.write(html.decode('utf-8'))
-                f.close()
-                selector=etree.HTML(html)
-                total_page=selector.xpath('//ul[@id="order"]/li/div[4]/div[3]/span[2]/text()')[0]
-                print("City:", city)
-                dict['city']=city
-                dict['position']=position
-                dict['total_page']=total_page
-                combine_list.append(dict)
-        return combine_list
 
     def start_requests(self):
-        combine_list=self.get_combine_list()
-        json_url= 'https://www.lagou.com/jobs/positionAjax.json?px=default&city=%s&needAddtionalResult=false'
-        for dict in combine_list:
-            city=dict['city']
-            position=dict['position']
-            #转化为整型
-            total_page=int(dict['total_page'])
-            print(city,position,total_page)
-            url=json_url % city
-            for page in range(1,total_page+1):
-                post_data={"first":"true",
-                           'pn':str(page),
-                           'kd':position
-                }
-                yield FormRequest(url,formdata=post_data,cookies=self.cookies,callback=self.parse_json)
+        pages = self.getAllJobsInfo()
+        isFirst = 'true'
+        for page in range(1,pages+1):
+            postData = {
+                'first':isFirst,
+                'kd':'数据分析',
+                'pn':str(page)
+            }
+            content = requests.post(self.jsonUrl, headers=self.headers, cookies=self.cookies, data=postData).content
+            content = content.decode("utf-8")
+            jsonData = json.loads(content)
+            jobs = jsonData['content']['positionResult']['result']
+            isFirst = 'false'
+            for job in jobs:
+                positionId = job['positionId']
+                jobUrl = self.baseJobUrl % positionId
+                yield FormRequest(jobUrl, callback=self.parseJson)
 
 
-    def parse_json(self,response):
-        json_data=json.loads(response.text.decode('utf-8'))
-        position_data=json_data["content"]["positionResult"]['result']
-        for positions in position_data:
-            # for i in positions:
-            #  print i
-            item={}
-            position_city=positions['city'].decode()
-            createTime=positions['createTime'].decode()
-            companyFullName=positions['companyFullName'].decode()
-            position=positions['positionName'].decode()
-            workYear=positions['workYear'].decode()
-            education=positions['education'].decode()
-            industryField=positions['industryField'].decode()
-            salary=positions['salary'].decode()
-            print("industryField", industryField)
-            print ("salary:", salary)
-            # item[1]=position_city
-            # item[2]=createTime
-            # item[3]=companyFullName
-            # item[4]=position
-            # item[5]=workYear
-            # item[6]=education
-            # item[7]=industryField
-            # item[8]=salary
-            #遍历出一条数据 调用自己写的类 传递字典 insert 数据
-            yield item
+    def parseJson(self, response):
+        sel = Selector(response)
+        item = LagouItem()
+
+        item['url'] = response.url
+        sceew = sel.xpath('//dd[@class="job_request"]/p/span/text()').extract()
+        if len(sceew) != 5:
+            return item
+
+        description = sel.xpath('//dd[@class="job_bt"]/div/p/text()').extract()
+        if not description:
+            description = sel.xpath('//dd[@class="job_bt"]/div/p/span/text()').extract()
+
+        # print("description:", description)
+
+        all = []
+        for d in description:
+            try:
+                int(d[0])
+            except ValueError:
+                pass
+            else:
+                all.append(d)
+
+        try:
+            last = int(all[-1][0])
+        except IndexError:
+            last = 0
+
+        item['name'] = sel.xpath('//div[@class="job-name"]/span[@class="name"]/text()').extract()
+        item['salary'] = sel.xpath('//dd[@class="job_request"]/p/span[@class="salary"]/text()').extract()
+
+        item['city'] = sceew[1]
+        item['experience'] = sceew[2]
+        item['education'] = sceew[3]
+        item['workload'] = sceew[4]
+
+        item['labels'] = sel.xpath('//ul[@class="position-label clearfix"]/li/text()').extract()
+        item['advantage'] = sel.xpath('//dd[@class="job-advantage"]/p/text()').extract()
+
+        item['description'] = all[0:-last]
+        item['requirements'] = all[-last:]
+        return item
