@@ -20,7 +20,7 @@ class LagouPipeline(object):
         self.edpat = compile(r'(\w+)及以上')
 
     def process_item(self, item, spider):
-        if item.get('city') == None or item.get('description') == None:
+        if item.get('city') == None or item.get('description') == None or len(item['description']) == 0:
             self.urls.insert(dict(item))
             raise DropItem('Missing city or description in %s' % item)
 
