@@ -2,11 +2,13 @@ import json
 import requests
 # from scrapy.http import FormRequest
 from scrapy.http import Request
-from scrapy.selector import Selector
+from re import match
+# from scrapy.selector import Selector
 from scrapy.spiders import CrawlSpider
 from time import time, ctime, sleep
 from random import random, choice
 from btc38.settings import HEADER, USER_AGENTS
+from btc38.items import Btc38Item
 
 class btc38Spider(CrawlSpider):
     name = 'btc38'
@@ -32,16 +34,43 @@ class btc38Spider(CrawlSpider):
             payload = {'n':n, '_':currentTime}
             res = requests.get(self.baseApiUrl, headers=header, params=payload)
             self.coinMarketInfo = json.loads(res.text)
-            print(self.coinMarketInfo)
+            # print(self.coinMarketInfo)
 
             for coin in self.coinMark:
                 n = random()
-                sleep(1)
+                # sleep(1)
                 completedCoinHolderurl = self.getCoinHoldUrl % (coin, n)
                 yield Request(url=completedCoinHolderurl, callback=self.parseJson)
 
+            sleep(60)
+
     def parseJson(self, response):
+        item = Btc38Item()
         url = response.url
-        print(url)
+        m = match(r'http.*coinname=(.*)&.*', url)
+        item['coinName'] = m.group(1)
+        item['date'] = response.headers['Date'].decode("utf-8")
+        item['currentPrice'] = float(self.coinMarketInfo[item['coinName'].lower() + self.coinInfos['current']])
+        item['zeroPrice'] = float(self.coinMarketInfo[item['coinName'].lower() + self.coinInfos['zeroCny']])
+        item['increase'] = (item['currentPrice'] - item['zeroPrice']) / item['zeroPrice']
+        item['todayLow'] = float(self.coinMarketInfo[item['coinName'].lower() + self.coinInfos['low']])
+        item['todayHight'] = float(self.coinMarketInfo[item['coinName'].lower() + self.coinInfos['high']])
+        item['todayAmo'] = float(self.coinMarketInfo[item['coinName'].lower() + self.coinInfos['amo']])
+        item['todayVol'] = float(self.coinMarketInfo[item['coinName'].lower() + self.coinInfos['vol']])
+
         coinHolder = json.loads(response.body)
-        print(coinHolder)
+        item['change24H'] = coinHolder['change24H']
+        item['changeWeek'] = coinHolder['changeWeek']
+        item['coinsPerHolders'] = coinHolder['coinsPerHolders']
+        item['holders'] = coinHolder['holders']
+        item['inflow24H'] = coinHolder['inflow24H']
+        item['inflowWeek'] = coinHolder['inflowWeek']
+        item['outflow24H'] = coinHolder['outflow24H']
+        item['outflowWeek'] = coinHolder['outflowWeek']
+        item['totalCoins'] = coinHolder['totalCoins']
+
+        return item
+        # print(url)
+
+        # print(coinHolder)
+
