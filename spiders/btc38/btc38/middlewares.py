@@ -5,7 +5,9 @@
 # See documentation in:
 # http://doc.scrapy.org/en/latest/topics/spider-middleware.html
 
-from scrapy import signals
+from scrapy import signals, exceptions
+import random
+from btc38.settings import USER_AGENTS
 
 
 class Btc38SpiderMiddleware(object):
@@ -54,3 +56,33 @@ class Btc38SpiderMiddleware(object):
 
     def spider_opened(self, spider):
         spider.logger.info('Spider opened: %s' % spider.name)
+
+
+class RandomUserAgent(object):
+    """Randomly rotate user agents based on a list of predefined ones"""
+
+    def __init__(self):
+        self.user_agents = USER_AGENTS
+
+    # @classmethod
+    def process_request(self, request, spider):
+        self.user_agent = random.choice(self.user_agents)
+        request.headers.setdefault('User-Agent', self.user_agent)
+
+
+    def process_response(self, request, response, spider):
+        spider.logger.info("status:%d" % response.status)
+        if response.status == 200:
+            return response
+        elif response.status == 404:
+            spider.logger.info("%s cannot found" % response.url)
+            raise exceptions.IgnoreRequest
+        elif response.status == 403:
+            spider.logger.info("This user_agent %s has been blocked, remove it and request again" % self.user_agent)
+            try:
+                self.user_agents.remove(self.user_agent)
+            except ValueError:
+                spider.logger.info("use agent has already removed, try again")
+            return request
+        else:
+            raise exceptions.IgnoreRequest

@@ -48,6 +48,8 @@ class btc38Spider(CrawlSpider):
         item = Btc38Item()
         url = response.url
         m = match(r'http.*coinname=(.*)&.*', url)
+        if not m:
+            return item
         item['coinName'] = m.group(1)
         item['date'] = response.headers['Date'].decode("utf-8")
         item['currentPrice'] = float(self.coinMarketInfo[item['coinName'].lower() + self.coinInfos['current']])
@@ -59,14 +61,14 @@ class btc38Spider(CrawlSpider):
         item['todayVol'] = float(self.coinMarketInfo[item['coinName'].lower() + self.coinInfos['vol']])
 
         coinHolder = json.loads(response.body)
-        item['change24H'] = coinHolder['change24H']
-        item['changeWeek'] = coinHolder['changeWeek']
+        item['change24H'] = float(coinHolder['change24H'].split(" ")[0])
+        item['changeWeek'] = float(coinHolder['changeWeek'].split(" ")[0])
         item['coinsPerHolders'] = coinHolder['coinsPerHolders']
         item['holders'] = coinHolder['holders']
-        item['inflow24H'] = coinHolder['inflow24H']
-        item['inflowWeek'] = coinHolder['inflowWeek']
-        item['outflow24H'] = coinHolder['outflow24H']
-        item['outflowWeek'] = coinHolder['outflowWeek']
+        item['inflow24H'] = float(coinHolder['inflow24H'].split(" ")[0])
+        item['inflowWeek'] = float(coinHolder['inflowWeek'].split(" ")[0])
+        item['outflow24H'] = float(coinHolder['outflow24H'].split(" ")[0])
+        item['outflowWeek'] = float(coinHolder['outflowWeek'].split(" ")[0])
         item['totalCoins'] = coinHolder['totalCoins']
 
         return item
